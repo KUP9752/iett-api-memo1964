@@ -10,7 +10,6 @@ from typing import Literal, Optional, Any
 from zeep import Client
 import json
 from pydantic import BaseModel  
-import xml.etree.ElementTree as ET
 import lxml
 
 ### ================= Types
@@ -77,7 +76,20 @@ fleetUrl = "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx?wsdl"
 hatUrl = "https://api.ibb.gov.tr/iett/ibb/ibb.asmx?wsdl"
 busUrl = "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx?wsdl"
 
+def getResp(url: str, api: str, **kwargs: dict[str, str]):
+  """
+  Helper that does the SOAP API request
 
+  Args:
+      url (str): wsdl URL to use 
+      api (str): endpoint to reach on the above url
+
+  Returns:
+      JSON | XML : Returns the raw data returned 
+  """
+  client = Client(wsdl = url)
+  return client.service[f"{api}"](**kwargs)
+  
 ### ========================= TASKS
 def announcements(line_code: str) -> tuple[int, list[str]]:
   """
@@ -89,10 +101,7 @@ def announcements(line_code: str) -> tuple[int, list[str]]:
   Returns:
       tuple[int, list[str]]: (Number of messages, list of messages)
   """
-  duyuruClient = Client(wsdl = duyuruUrl)
-  announcements = duyuruClient.service.GetDuyurular_json()
-  duyuruClient = Client(wsdl = duyuruUrl)
-  announcements = duyuruClient.service.GetDuyurular_json()
+  announcements = getResp(url = duyuruUrl, api = "GetDuyurular_json")
   announcements: list[Duyuru] = [Duyuru.model_validate(d) for d in json.loads(announcements)]
   
   mesajs = [duyuru.MESAJ for duyuru in filter(lambda duyuru: duyuru.HATKODU == line_code, announcements)]
@@ -105,8 +114,7 @@ def stopping_buses() -> list[str]:
   Returns:
       list[str]: List of Bus Door Numbers
   """
-  fleetClient = Client(wsdl = fleetUrl)
-  fleetData = fleetClient.service.GetFiloAracKonum_json()
+  fleetData = getResp(url = fleetUrl, api = "GetFiloAracKonum_json")
   fleetData: list[FiloArac] = [FiloArac.model_validate(fd) for fd in json.loads(fleetData)]
   
   ## assumption: find stopping from speed? if hiz == 0 => stopping
@@ -120,8 +128,7 @@ def max_speeds() -> list[FiloArac]: # !! in json format
   Returns:
       list[FiloArac]: 3 buses with the highest speeds
   """
-  fleetClient = Client(wsdl = fleetUrl)
-  fleetData = fleetClient.service.GetFiloAracKonum_json()
+  fleetData = getResp(url = fleetUrl, api = "GetFiloAracKonum_json")
   fleetData: list[FiloArac] = [FiloArac.model_validate(fd) for fd in json.loads(fleetData)]
   
   return [arac.model_dump() for arac in sorted(fleetData, key = lambda fa: fa.Hiz, reverse = True)[:2]]
@@ -138,8 +145,7 @@ def show_line_stops(line_code: str, direction: Literal["D", "G"]) -> list[str]:
   Returns:
       list[str]: List of stop names
   """
-  hatClient = Client(wsdl = hatUrl)
-  hatXML: lxml.etree.Element = hatClient.service.DurakDetay_GYY(hat_kodu = line_code)
+  hatXML: lxml.etree.Element = getResp(url = hatUrl, api = "DurakDetay_GYY", hat_kodu = line_code)
   
   ## if YON == direction => return DURAKADI
   matches = hatXML.xpath(f'.//Table[YON = "{direction}"]/DURAKADI') if direction in ["G", "D"] else []
@@ -162,12 +168,12 @@ def live_tracking(line_code: str, direction: Literal["G", "D"]) \
       where T = tuple(str, float, float) -> (name, ycoord, xcoord)
       
   """
-  hatClient = Client(wsdl = hatUrl)
-  hatXML: lxml.etree.Element = hatClient.service.DurakDetay_GYY(hat_kodu = line_code)
+  ## Stops: 
+  hatXML: lxml.etree.Element = getResp(url = hatUrl, api = "DurakDetay_GYY", hat_kodu = line_code)
   stopMatches = hatXML.xpath(f'.//Table[YON = "{direction}"]') if direction in ["G", "D"] else []
   
-  busClient = Client(wsdl = busUrl)
-  busData = busClient.service.GetHatOtoKonum_json(HatKodu = line_code)
+  ## Buses: 
+  busData = getResp(url = busUrl, api = "GetHatOtoKonum_json", HatKodu = line_code)
   busMatches = [HatAracKonum.model_validate(bus) for bus in json.loads(busData)]
   
   def extract(root, items: dict[str, type]) -> tuple[Any, Any, Any]:
@@ -183,7 +189,7 @@ def live_tracking(line_code: str, direction: Literal["G", "D"]) \
     
   return stops, buses
 
-with open("out.txt", "w") as f:
+with open("out2.txt", "w") as f:
   f.write(f"(1) \n\t{announcements("10") = }\n")
   f.write(f"(2) \n\t{stopping_buses() = }\n")
   f.write(f"(3) \n\t{ max_speeds() = }\n")
