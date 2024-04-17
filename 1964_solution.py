@@ -3,12 +3,6 @@ assignment_code = 140110201
 name = "Baha"
 surname = "Blast"
 student_id = "1964"
-### Do not change the variable names above, just fill them in ###cd 
-############ Do not change the assignment code value ############
-assignment_code = 140110201
-name = "Baha"
-surname = "Blast"
-student_id = "1964"
 ### Do not change the variable names above, just fill them in ###
 
 from dataclasses import dataclass
@@ -28,7 +22,7 @@ class Duyuru(BaseModel):
 def announcements(line_code: str) -> tuple[int, list[str]]:
     duyuruUrl = "https://api.ibb.gov.tr/iett/UlasimDinamikVeri/Duyurular.asmx?wsdl"
     DuyuruClient = Client(wsdl = duyuruUrl)
-    announcements = DuyuruClient.service["GetDuyurular_json"]()
+    announcements = DuyuruClient.service.GetDuyurular_json()
     
     announcements: list[Duyuru] = [Duyuru.model_validate(d) for d in json.loads(announcements)]
     
@@ -51,4 +45,3 @@ def live_tracking(line_code, direction):
     pass
 
 print(f"{announcements("10") = }")
-
