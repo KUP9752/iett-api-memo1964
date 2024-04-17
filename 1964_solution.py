@@ -33,7 +33,10 @@ def announcements(line_code: str) -> tuple[int, list[str]]:
     duyuruUrl = "https://api.ibb.gov.tr/iett/UlasimDinamikVeri/Duyurular.asmx?wsdl"
     duyuruClient = Client(wsdl = duyuruUrl)
     announcements = duyuruClient.service.GetDuyurular_json()
+    duyuruClient = Client(wsdl = duyuruUrl)
+    announcements = duyuruClient.service.GetDuyurular_json()
     announcements: list[Duyuru] = [Duyuru.model_validate(d) for d in json.loads(announcements)]
+    print(f"{ announcements[0] = }")
     
     mesajs = [duyuru.MESAJ for duyuru in filter(lambda duyuru: duyuru.HATKODU == line_code, announcements)]
     return len(mesajs), mesajs
