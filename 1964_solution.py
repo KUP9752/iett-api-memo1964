@@ -97,12 +97,13 @@ def show_line_stops(line_code: str, direction: Literal["D", "G"]) -> list[str]:
     hatXML:lxml.etree.Element = hatClient.service.DurakDetay_GYY(hat_kodu = line_code)
     
     ## if YON == direction return DURAKADI
-    matches = hatXML.xpath(f'.//YON[text()="{direction}"]/parent::Table//DURAKADI') if direction in ["G", "D"] else []
+    matches = hatXML.xpath(f'.//Table[YON = "{direction}"]/DURAKADI') if direction in ["G", "D"] else []
     ##FIXME error if the direction param is incorrect??
     
     return [m.text for m in matches]
       
-def live_tracking(line_code, direction):
+def live_tracking(line_code: str, direction: Literal["G", "D"]) \
+  -> tuple[list[tuple[str, float, float]], tuple[str, float, float]]:
     pass
 
 # print(f"{announcements("10") = }")
@@ -114,5 +115,6 @@ def live_tracking(line_code, direction):
 print(f"{show_line_stops("19T", "G")}")
 print("-----")
 print(f"{show_line_stops("122C", "D")}")
+print()
 
 
