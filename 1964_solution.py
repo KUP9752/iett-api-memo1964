@@ -97,7 +97,6 @@ def max_speeds() -> list[FiloArac]: # !! in json format
     fleetClient = Client(wsdl = fleetUrl)
     fleetData = fleetClient.service.GetFiloAracKonum_json()
     fleetData: list[FiloArac] = [FiloArac.model_validate(fd) for fd in json.loads(fleetData)]
-    print(f"{ fleetData[0] =}")
     
     return [arac.model_dump() for arac in sorted(fleetData, key = lambda fa: fa.Hiz, reverse = True)[:2]]
     
@@ -137,4 +136,18 @@ def live_tracking(line_code: str, direction: Literal["G", "D"]) \
       
     return stops, buses
 
+with open("out.txt", "w") as f:
+  f.write(f"(1) \n\t{announcements("10") = }\n")
+  f.write(f"(2) \n\t{stopping_buses() = }\n")
+  f.write(f"(3) \n\t{ max_speeds() = }\n")
+  f.write(f"(4) \n\t{show_line_stops("19T", "G")}\n")
+  f.write(f"(4) \n\t{show_line_stops("122C", "D")}\n")
+  f.write(f"(5) \n\t{live_tracking("122C", "D")}\n")
+
+# print(f"(1) \n\t{announcements("10") = }\n")
+# print(f"(2) \n\t{stopping_buses() = }\n")
+# print(f"(3) \n\t{ max_speeds() = }\n")
+# print(f"(4) \n\t{show_line_stops("19T", "G")}\n")
+# print(f"(4) \n\t{show_line_stops("122C", "D")}\n")
+# print(f"(5) \n\t{live_tracking("122C", "D")}\n")
 
