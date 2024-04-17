@@ -36,7 +36,6 @@ def announcements(line_code: str) -> tuple[int, list[str]]:
     duyuruClient = Client(wsdl = duyuruUrl)
     announcements = duyuruClient.service.GetDuyurular_json()
     announcements: list[Duyuru] = [Duyuru.model_validate(d) for d in json.loads(announcements)]
-    print(f"{ announcements[0] = }")
     
     mesajs = [duyuru.MESAJ for duyuru in filter(lambda duyuru: duyuru.HATKODU == line_code, announcements)]
     return len(mesajs), mesajs
@@ -61,7 +60,7 @@ def max_speeds() -> list[FiloArac.json]: ## in json format
     return [arac.model_dump() for arac in sorted(fleetData, key = lambda fa: fa.Hiz, reverse = True)[:2]]
     
 def show_line_stops(line_code: str, direction: Literal["D", "G"]) -> list[str]:
-    
+    pass
 def live_tracking(line_code, direction):
     pass
 
