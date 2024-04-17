@@ -70,6 +70,14 @@ class HatInfo(BaseModel):
   ISLETMEALTBOLGE: str
   ILCEADI:str 
 
+### ========================= URLS
+duyuruUrl = "https://api.ibb.gov.tr/iett/UlasimDinamikVeri/Duyurular.asmx?wsdl"
+fleetUrl = "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx?wsdl"
+fleetUrl = "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx?wsdl"
+hatUrl = "https://api.ibb.gov.tr/iett/ibb/ibb.asmx?wsdl"
+busUrl = "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx?wsdl"
+
+
 ### ========================= TASKS
 def announcements(line_code: str) -> tuple[int, list[str]]:
   """
@@ -81,7 +89,6 @@ def announcements(line_code: str) -> tuple[int, list[str]]:
   Returns:
       tuple[int, list[str]]: (Number of messages, list of messages)
   """
-  duyuruUrl = "https://api.ibb.gov.tr/iett/UlasimDinamikVeri/Duyurular.asmx?wsdl"
   duyuruClient = Client(wsdl = duyuruUrl)
   announcements = duyuruClient.service.GetDuyurular_json()
   duyuruClient = Client(wsdl = duyuruUrl)
@@ -98,7 +105,6 @@ def stopping_buses() -> list[str]:
   Returns:
       list[str]: List of Bus Door Numbers
   """
-  fleetUrl = "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx?wsdl"
   fleetClient = Client(wsdl = fleetUrl)
   fleetData = fleetClient.service.GetFiloAracKonum_json()
   fleetData: list[FiloArac] = [FiloArac.model_validate(fd) for fd in json.loads(fleetData)]
@@ -114,7 +120,6 @@ def max_speeds() -> list[FiloArac]: # !! in json format
   Returns:
       list[FiloArac]: 3 buses with the highest speeds
   """
-  fleetUrl = "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx?wsdl"
   fleetClient = Client(wsdl = fleetUrl)
   fleetData = fleetClient.service.GetFiloAracKonum_json()
   fleetData: list[FiloArac] = [FiloArac.model_validate(fd) for fd in json.loads(fleetData)]
@@ -133,7 +138,6 @@ def show_line_stops(line_code: str, direction: Literal["D", "G"]) -> list[str]:
   Returns:
       list[str]: List of stop names
   """
-  hatUrl = "https://api.ibb.gov.tr/iett/ibb/ibb.asmx?wsdl"
   hatClient = Client(wsdl = hatUrl)
   hatXML: lxml.etree.Element = hatClient.service.DurakDetay_GYY(hat_kodu = line_code)
   
@@ -158,12 +162,10 @@ def live_tracking(line_code: str, direction: Literal["G", "D"]) \
       where T = tuple(str, float, float) -> (name, ycoord, xcoord)
       
   """
-  hatUrl = "https://api.ibb.gov.tr/iett/ibb/ibb.asmx?wsdl"
   hatClient = Client(wsdl = hatUrl)
   hatXML: lxml.etree.Element = hatClient.service.DurakDetay_GYY(hat_kodu = line_code)
   stopMatches = hatXML.xpath(f'.//Table[YON = "{direction}"]') if direction in ["G", "D"] else []
   
-  busUrl = "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx?wsdl"
   busClient = Client(wsdl = busUrl)
   busData = busClient.service.GetHatOtoKonum_json(HatKodu = line_code)
   busMatches = [HatAracKonum.model_validate(bus) for bus in json.loads(busData)]
