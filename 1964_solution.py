@@ -5,9 +5,8 @@ surname = "Blast"
 student_id = "1964"
 ### Do not change the variable names above, just fill them in ###
 
-from dataclasses import dataclass
 from enum import Enum
-from typing import Literal, Optional, TypeAlias, Any
+from typing import Literal, Optional, Any
 from zeep import Client
 import json
 from pydantic import BaseModel  
@@ -31,6 +30,17 @@ class FiloArac(BaseModel):
   Enlem: float
   Hiz: int # float??
   Plaka: Optional[str] #TODO: plaka class??
+  
+class HatAracKonum(BaseModel):
+  kapino: str
+  boylam: float
+  enlem: float  
+  hatkodu: str
+  guzergahkodu: str
+  hatad: str
+  yon: str #Literal["G", "D"]
+  son_konum_zamani: str #FIXME time??
+  yakinDurakKodu: str
     
 class DurakTipi(Enum):
   CCMODERN, \
@@ -94,7 +104,7 @@ def max_speeds() -> list[FiloArac]: # !! in json format
 def show_line_stops(line_code: str, direction: Literal["D", "G"]) -> list[str]:
     hatUrl = "https://api.ibb.gov.tr/iett/ibb/ibb.asmx?wsdl"
     hatClient = Client(wsdl = hatUrl)
-    hatXML:lxml.etree.Element = hatClient.service.DurakDetay_GYY(hat_kodu = line_code)
+    hatXML: lxml.etree.Element = hatClient.service.DurakDetay_GYY(hat_kodu = line_code)
     
     ## if YON == direction return DURAKADI
     matches = hatXML.xpath(f'.//Table[YON = "{direction}"]/DURAKADI') if direction in ["G", "D"] else []
@@ -104,17 +114,27 @@ def show_line_stops(line_code: str, direction: Literal["D", "G"]) -> list[str]:
       
 def live_tracking(line_code: str, direction: Literal["G", "D"]) \
   -> tuple[list[tuple[str, float, float]], tuple[str, float, float]]:
-    pass
-
-# print(f"{announcements("10") = }")
-# print()
-# # print(f"{stopping_buses() = }")
-# print()
-# print(f"{ max_speeds() = }")
-# print()
-print(f"{show_line_stops("19T", "G")}")
-print("-----")
-print(f"{show_line_stops("122C", "D")}")
-print()
+    hatUrl = "https://api.ibb.gov.tr/iett/ibb/ibb.asmx?wsdl"
+    hatClient = Client(wsdl = hatUrl)
+    hatXML: lxml.etree.Element = hatClient.service.DurakDetay_GYY(hat_kodu = line_code)
+    stopMatches = hatXML.xpath(f'.//Table[YON = "{direction}"]') if direction in ["G", "D"] else []
+    
+    busUrl = "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx?wsdl"
+    busClient = Client(wsdl = busUrl)
+    busData = busClient.service.GetHatOtoKonum_json(HatKodu = line_code)
+    busMatches = [HatAracKonum.model_validate(bus) for bus in json.loads(busData)]
+    
+    def extract(root, items: dict[str, type]) -> tuple[Any, Any, Any]:
+      ## ty used to cast the types (mainly for float as  text is always str)
+      return [ty(root.find(item).text) for item, ty in items.items()]
+    
+    stops = [extract(match, {"DURAKADI": str, "YKOORDINATI": float, "XKOORDINATI": float}) for match in stopMatches]
+    buses = [[bus.kapino, bus.enlem, bus.boylam] for bus in busMatches]
+    
+    with open("where.js", "w") as f:
+      f.write(f"{stops = }\n")
+      f.write(f"{buses = }\n")
+      
+    return stops, buses
 
 
