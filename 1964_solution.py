@@ -131,7 +131,7 @@ def max_speeds() -> list[FiloArac]: # !! in json format
   fleetData = getResp(url = fleetUrl, api = "GetFiloAracKonum_json")
   fleetData: list[FiloArac] = [FiloArac.model_validate(fd) for fd in json.loads(fleetData)]
   
-  return [arac.model_dump() for arac in sorted(fleetData, key = lambda fa: fa.Hiz, reverse = True)[:2]]
+  return [arac.model_dump() for arac in sorted(fleetData, key = lambda fa: fa.Hiz, reverse = True)[:3]]
     
 def show_line_stops(line_code: str, direction: Literal["D", "G"]) -> list[str]:
   """
@@ -154,7 +154,7 @@ def show_line_stops(line_code: str, direction: Literal["D", "G"]) -> list[str]:
   return [m.text for m in matches]
       
 def live_tracking(line_code: str, direction: Literal["G", "D"]) \
-  -> tuple[list[tuple[str, float, float]], tuple[str, float, float]]:
+  -> tuple[list[tuple[str, float, float]], list[tuple[str, float, float]]]:
   """ 
   Function that saves the stops of the selected line and direction and the data of 
   the  buses  currently  operating  on  that  line  to  the  where.js  file 
